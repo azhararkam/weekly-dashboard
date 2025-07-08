@@ -1,0 +1,117 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# --- Load Data ---
+@st.cache_data
+def load_data(path):
+    df = pd.read_excel(path)
+    df = df[['WorkWeek', 'Type', 'Material Description', 'Cost (USD)']]
+    df = df.dropna(subset=['WorkWeek', 'Type', 'Material Description', 'Cost (USD)'])
+    return df
+
+# --- App Title ---
+st.title("📊 Weekly Inventory Expenditure Dashboard")
+
+# --- File Uploader ---
+uploaded_file = st.file_uploader("Upload Weekly Expenditure Excel File", type=['xlsx'])
+
+if uploaded_file:
+    df = load_data(uploaded_file)
+
+    # --- Sidebar Filters ---
+    st.sidebar.header("Filter Data")
+    weeks = sorted(df['WorkWeek'].unique())
+    types = sorted(df['Type'].unique())
+
+    selected_weeks = st.sidebar.multiselect("Select Week(s)", options=weeks, default=weeks)
+    selected_types = st.sidebar.multiselect("Select Type(s)", options=types, default=types)
+
+    filtered_df = df[
+        (df['WorkWeek'].isin(selected_weeks)) &
+        (df['Type'].isin(selected_types))
+    ]
+
+    # --- Spend Metrics ---
+    total_spend = filtered_df['Cost (USD)'].sum()
+    sap_spend = filtered_df[filtered_df['Type'] == 'SAP']['Cost (USD)'].sum()
+    expense_spend = filtered_df[filtered_df['Type'] == 'Expense']['Cost (USD)'].sum()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("💰 Total Spend (Filtered)", f"${total_spend:,.2f}")
+    col2.metric("📄 SAP Spend", f"${sap_spend:,.2f}")
+    col3.metric("🛠️ Expense Spend", f"${expense_spend:,.2f}")
+
+    # --- Weekly Spend Chart ---
+    weekly_summary = (
+        filtered_df.groupby(['WorkWeek', 'Type'])['Cost (USD)']
+        .sum()
+        .reset_index()
+    )
+
+    fig = px.bar(
+        weekly_summary,
+        x='WorkWeek',
+        y='Cost (USD)',
+        color='Type',
+        barmode='group',
+        title="Weekly Spend Summary by Type (SAP vs Expense)",
+        text_auto='.2s'
+    )
+
+    fig.update_layout(
+        title={
+            'text': "Weekly Spend Summary by Type (SAP vs Expense)",
+            'x': 0.5,
+            'xanchor': 'center'
+        },
+        xaxis_title="Work Week",
+        yaxis_title="Spend ($USD)",
+        title_font=dict(size=18),
+        title_font_family="Arial"
+    )
+    fig.update_traces(textfont_size=14)
+    st.plotly_chart(fig, use_container_width=True, key="weekly_summary_chart")
+
+    # --- Drill Down ---
+    st.subheader("🔍 Drill Down by Week")
+    drill_week = st.selectbox("Select a Week", options=weeks, key="week_select")
+    drill_df = df[df['WorkWeek'] == drill_week]
+    drill_summary = (
+        drill_df.groupby('Material Description')['Cost (USD)']
+        .sum()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+
+    st.write(f"Top items for **{drill_week}**:")
+    st.dataframe(drill_summary.head(10))
+
+    drill_fig = px.bar(
+        drill_summary.head(10),
+        x='Material Description',
+        y='Cost (USD)',
+        text_auto=True,
+        title=f"Top 10 Items in {drill_week}"
+    )
+    drill_fig.update_layout(
+        xaxis_title="Material Description",
+        yaxis_title="Spend ($USD)",
+        title_x=0.5
+    )
+    st.plotly_chart(drill_fig, use_container_width=True, key="drilldown_week_chart")
+
+    # --- Download Option ---
+    st.download_button(
+        label="📥 Download Drilldown CSV",
+        data=drill_summary.to_csv(index=False),
+        file_name=f"Top_Items_{drill_week}.csv",
+        mime='text/csv'
+    )
+
+    # --- Full Table ---
+    st.subheader("Filtered Records")
+    st.dataframe(filtered_df.reset_index(drop=True))
+
+else:
+    st.info("Please upload the weekly expenditure Excel file to begin.")
