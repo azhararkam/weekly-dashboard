@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import re
 
 # cd "C:\Users\A.MohamedArkam\OneDrive - ams OSRAM\amoa\DropBox III\Desktop\EongsRequest\ploty_Dashboard\Weeklydashboard"
 # streamlit run weekly_dashboard.py
@@ -9,12 +10,16 @@ import plotly.express as px
 @st.cache_data
 def load_data(path):
     df = pd.read_excel(path)
-    df.columns = df.columns.str.strip()  # remove extra spaces
-    df = df[['WorkWeek', 'Type', 'Material Description', 'Cost (USD)']]
-    df = df.dropna(subset=['WorkWeek', 'Type', 'Material Description', 'Cost (USD)'])
+    df.columns = df.columns.str.strip()
+    df = df[['WorkWeek', 'Type', 'Material Description', 'Quantity', 'Cost (USD)']]
+    df = df.dropna(subset=['WorkWeek', 'Type', 'Material Description', 'Quantity', 'Cost (USD)'])
+
+    # Extract numeric quantity (e.g., '4pcs' → 4)
+    df['Quantity'] = df['Quantity'].astype(str).apply(lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0)
+
     return df
 
-# ✅ Automatically load the file from the same folder
+# ✅ Auto load file
 df = load_data("Weekly Expenditure.xlsx")
 
 # --- App Title ---
@@ -35,14 +40,14 @@ filtered_df = df[
 ]
 
 # --- Metrics ---
-total = filtered_df['Cost (USD)'].sum()
-sap = filtered_df[filtered_df['Type'] == 'SAP']['Cost (USD)'].sum()
-expense = filtered_df[filtered_df['Type'] == 'Expense']['Cost (USD)'].sum()
+total_spent = filtered_df['Cost (USD)'].sum()
+sap_spent = filtered_df[filtered_df['Type'] == 'SAP']['Cost (USD)'].sum()
+expense_spent = filtered_df[filtered_df['Type'] == 'Expense']['Cost (USD)'].sum()
 
 col1, col2, col3 = st.columns(3)
-col1.metric("💰 Total Spend", f"${total:,.2f}")
-col2.metric("📄 SAP Spend", f"${sap:,.2f}")
-col3.metric("🛠 Expense Spend", f"${expense:,.2f}")
+col1.metric("💰 Total Spend", f"${total_spent:,.2f}")
+col2.metric("📄 SAP Spend", f"${sap_spent:,.2f}")
+col3.metric("🛠 Expense Spend", f"${expense_spent:,.2f}")
 
 # --- Bar Chart Weekly Spend ---
 summary = (
@@ -60,8 +65,9 @@ fig = px.bar(
     text_auto=True,
     title="Weekly Spend Summary by Type"
 )
-fig.update_traces(textfont_size=14)
+
 fig.update_layout(
+    title_x=0.5,
     title={
         'text': "Weekly Spend Summary by Type",
         'x': 0.5,
@@ -87,10 +93,9 @@ drill_df = df[
 ]
 
 drill_summary = (
-    drill_df.groupby('Material Description')['Cost (USD)']
-    .sum()
-    .sort_values(ascending=False)
-    .reset_index()
+    drill_df.groupby(['Material Description'], as_index=False)
+    .agg({'Cost (USD)': 'sum', 'Quantity': 'sum'})
+    .sort_values(by='Cost (USD)', ascending=False)
 )
 
 st.write(f"Top 10 items for **{drill_week}** ({selected_drill_type}):")
@@ -104,9 +109,9 @@ drill_fig = px.bar(
     title=f"Top 10 Items in {drill_week} ({selected_drill_type})"
 )
 drill_fig.update_layout(
+    title_x=0.5,
     xaxis_title="Material Description",
-    yaxis_title="Spend ($USD)",
-    title_x=0.5
+    yaxis_title="Spend ($USD)"
 )
 st.plotly_chart(drill_fig, use_container_width=True)
 
