@@ -1,0 +1,29 @@
+✅ Here's what I’ll include in your step-by-step compilation:
+Local Edits to Excel (Weekly Expenditure.xlsx)
+
+How to Preview & Validate Changes Locally
+
+How to Push Excel File to GitHub
+
+How to Refresh Streamlit App
+
+Rerun
+
+Clear Cache (if needed)
+
+One-Click Upload Script Explanation
+
+README.md Automation
+
+Reversing Changes / Testing
+
+Sharing the App With Others (Do you need to resend the link?)
+
+Bonus (optional): Adding screenshots, badges, install guide
+
+Please confirm:
+✅ Would you like this as a Markdown file (.md) you can include in your repo?
+✅ Should I name it something like user_guide.md or contributor_guide.md?
+✅ Want it embedded into README.md or separate?
+
+Once you confirm, I’ll generate it for you right away.
