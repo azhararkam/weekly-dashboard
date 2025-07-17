@@ -5,6 +5,8 @@ import re
 
 # cd "C:\Users\A.MohamedArkam\OneDrive - ams OSRAM\amoa\DropBox III\Desktop\EongsRequest\ploty_Dashboard\Weeklydashboard"
 # streamlit run weekly_dashboard.py
+# https://weekly-dashboard-bxrt3wmqbulm4pkob6b9iv.streamlit.app/
+# This Test Weekly Update
 
 # --- Load Data Automatically ---
 @st.cache_data
@@ -23,7 +25,7 @@ def load_data(path):
 df = load_data("Weekly Expenditure.xlsx")
 
 # --- App Title ---
-st.title("📊 Weekly Inventory Expenditure Dashboard")
+st.title("📊 Test Weekly Inventory Expenditure Dashboard")
 st.markdown("Using default file: **Weekly Expenditure.xlsx**")
 
 # --- Sidebar Filters ---
@@ -125,3 +127,5 @@ st.download_button(
 # --- Full Table ---
 st.subheader("📋 Filtered Table")
 st.dataframe(filtered_df.reset_index(drop=True))
+
+
